@@ -6,14 +6,26 @@
           Berita Terkini
         </q-toolbar-title>
 
+        <div class="q-ml-md" style="width: 15rem;">
+         <q-select
+         outlined
+         v-model="model"
+         bg-color="white"
+         :options="categories"
+         :dense="true"
+         label="Category Berita"
+         @change="onCategoryChange"
+         />
+       </div>
         <!-- Kotak Pencarian -->
-        <div class="q-ml-md">
+        <div class="q-ml-md" style="margin-right: 1.5rem;">
           <q-input
             v-model="searchTerm"
             label="Cari berita"
             color="white"
             dense
             @input="searchNews"
+            @keyup.enter="searchNews"
           >
             <template v-slot:append>
               <q-btn
@@ -24,42 +36,40 @@
                 icon="search"
                 aria-label="Cari"
                 @click="searchNews"
-              />
-            </template>
-          </q-input>
-        </div>
+                />
+              </template>
+            </q-input>
+          </div>
+
       </q-toolbar>
     </q-header>
 
     <q-page-container>
       <q-card-section>
-      <div class="q-pa-md row items-start q-gutter-md" style="justify-content: center;">
-      <q-col
-        v-for="(article, index) in filteredBeritaList" :key="index" class="q-mb-md" style="width: 450px"
-        :span-xs="12"
-        :span-sm="6"
-        :span-md="4"
-      >
-        <q-card class="my-card" clickabel @click="tampilkanDetailBerita(article)" style="cursor: pointer;">
-          <q-img :src="article.urlToImage" alt=" " >
-            <div class="absolute-bottom text-h6">
-              {{ article.title }}
-            </div>
-          </q-img>
+        <div class="q-pa-md row items-start q-gutter-md" style="justify-content: center;">
+          <div
+            v-for="(article, index) in beritaList" :key="index" class="q-mb-md" style="width: 450px"
+          >
+            <q-card class="my-card" clickable @click="tampilkanDetailBerita(article)" style="cursor: pointer;">
+              <q-img :src="article.urlToImage" alt=" ">
+                <div class="absolute-bottom text-h6">
+                  {{ article.title }}
+                </div>
+              </q-img>
 
-          <q-card-section style="font-family: 'Poppins'; font-size: 1.4rem;">
-            {{ article.description }}
-          </q-card-section>
-        </q-card>
-      </q-col>
-    </div>
-    </q-card-section>
-  </q-page-container>
+              <q-card-section style="font-family: 'Poppins'; font-size: 1.4rem;">
+                {{ article.description }}
+              </q-card-section>
+            </q-card>
+          </div>
+        </div>
+      </q-card-section>
+    </q-page-container>
   </q-layout>
 </template>
 
 <script>
-import { defineComponent, ref, onMounted, computed } from 'vue'
+import { defineComponent, ref, onMounted } from 'vue'
 import axios from 'axios'
 
 export default defineComponent({
@@ -74,8 +84,6 @@ export default defineComponent({
       window.open(berita.url)
     }
 
-    const toggleSearchBar = () => {}
-
     const fetchNews = async () => {
       try {
         const apiKey = '959823a4ed2f4f9095156ec4c82fd957'
@@ -86,7 +94,7 @@ export default defineComponent({
             const response = await axios.get(apiUrl, {
               params: {
                 country: 'us',
-                category: [category]
+                category: { category }
               },
               headers: {
                 'X-Api-Key': apiKey
@@ -104,29 +112,44 @@ export default defineComponent({
       }
     }
 
-    // Ambil daftar berita saat komponen dibuat
+    const searchNews = async () => {
+      try {
+        const apiKey = '959823a4ed2f4f9095156ec4c82fd957'
+        const apiUrl = 'https://newsapi.org/v2/everything'
+
+        const response = await axios.get(apiUrl, {
+          params: {
+            q: searchTerm.value,
+            apiKey
+          }
+        })
+
+        if (response.data.status === 'ok') {
+          const searchResult = response.data.articles
+          const combinedArticles = searchResult
+          beritaList.value = combinedArticles
+        } else {
+          console.error('Terjadi kesalahan dalam pencarian berita.')
+        }
+      } catch (error) {
+        console.error('Gagal mencari berita:', error)
+      }
+    }
+
+    const onCategoryChange = () => {
+      fetchNews()
+    }
     onMounted(() => {
       fetchNews()
     })
-
-    const filteredBeritaList = computed(() => {
-      return beritaList.value.filter((article) =>
-        article.title.toLowerCase().includes(searchTerm.value.toLowerCase())
-      )
-    })
-
-    const searchNews = () => {
-      // Implementasi pencarian berita di sini
-    }
 
     return {
       beritaList,
       tampilkanDetailBerita,
       searchTerm,
-      toggleSearchBar,
-      filteredBeritaList,
+      categories: ['business', 'health', 'sports', 'entertainment', 'science'],
       searchNews,
-      categories
+      onCategoryChange
     }
   }
 })
