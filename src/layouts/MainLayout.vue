@@ -6,18 +6,6 @@
           Berita Terkini
         </q-toolbar-title>
 
-        <div class="q-ml-md" style="width: 15rem;">
-         <q-select
-         outlined
-         v-model="model"
-         bg-color="white"
-         :options="categories"
-         :dense="true"
-         label="Category Berita"
-         @change="onCategoryChange"
-         />
-       </div>
-        <!-- Kotak Pencarian -->
         <div class="q-ml-md" style="margin-right: 1.5rem;">
           <q-input
             v-model="searchTerm"
@@ -84,29 +72,26 @@ export default defineComponent({
       window.open(berita.url)
     }
 
-    const fetchNews = async () => {
+    const fetchNews = async (category) => {
       try {
         const apiKey = '959823a4ed2f4f9095156ec4c82fd957'
         const apiUrl = 'https://newsapi.org/v2/top-headlines'
 
-        const responses = await Promise.all(
-          categories.value.map(async (category) => {
-            const response = await axios.get(apiUrl, {
-              params: {
-                country: 'us',
-                category: { category }
-              },
-              headers: {
-                'X-Api-Key': apiKey
-              }
-            })
-            return response.data.articles
-          })
-        )
+        const response = await axios.get(apiUrl, {
+          params: {
+            country: 'us',
+            category: { category }
+          },
+          headers: {
+            'X-Api-Key': apiKey
+          }
+        })
 
-        const combinedArticles = responses.flat()
-
-        beritaList.value = combinedArticles
+        if (response.data.status === 'ok') {
+          beritaList.value = response.data.articles
+        } else {
+          console.error('Terjadi kesalahan dalam mengambil berita.')
+        }
       } catch (error) {
         console.error('Gagal mengambil berita:', error)
       }
@@ -125,9 +110,7 @@ export default defineComponent({
         })
 
         if (response.data.status === 'ok') {
-          const searchResult = response.data.articles
-          const combinedArticles = searchResult
-          beritaList.value = combinedArticles
+          beritaList.value = response.data.articles
         } else {
           console.error('Terjadi kesalahan dalam pencarian berita.')
         }
@@ -136,20 +119,16 @@ export default defineComponent({
       }
     }
 
-    const onCategoryChange = () => {
-      fetchNews()
-    }
     onMounted(() => {
-      fetchNews()
+      fetchNews(categories)
     })
 
     return {
       beritaList,
       tampilkanDetailBerita,
       searchTerm,
-      categories: ['business', 'health', 'sports', 'entertainment', 'science'],
-      searchNews,
-      onCategoryChange
+      categories,
+      searchNews
     }
   }
 })
